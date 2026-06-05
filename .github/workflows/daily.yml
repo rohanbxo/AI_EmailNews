@@ -1,0 +1,46 @@
+name: Daily AI News Digest
+
+on:
+  schedule:
+    # 13:00 UTC daily (= 18:30 IST). Edit to taste.
+    - cron: "0 13 * * *"
+  workflow_dispatch: {}  # allow manual runs from the Actions tab
+
+concurrency:
+  group: daily-digest
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run daily pipeline
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          WEBSHARE_USERNAME: ${{ secrets.WEBSHARE_USERNAME }}
+          WEBSHARE_PASSWORD: ${{ secrets.WEBSHARE_PASSWORD }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'llama-3.3-70b-versatile' }}
+          DIGEST_LOOKBACK_HOURS: ${{ vars.DIGEST_LOOKBACK_HOURS || '24' }}
+          EMAIL_TOP_N: ${{ vars.EMAIL_TOP_N || '10' }}
+        run: uv run python main.py
