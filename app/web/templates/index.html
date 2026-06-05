@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Today's AI News Digest{% endblock %}
+
+{% block content %}
+<h2>Today's digest</h2>
+<p class="subtitle">
+  {% if day %}
+    Generated {{ day.strftime('%A, %B %d, %Y') }} · ranked for {{ profile.role }}.
+  {% else %}
+    No digests yet. The first one runs at 13:00 UTC daily.
+  {% endif %}
+</p>
+
+{% if items %}
+  {% for item in items %}
+    {% include "_card.html" %}
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    Nothing here yet — check back after the next daily run, or browse the <a href="/archive">archive</a>.
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — AI News Digest{% endblock %}
+
+{% block content %}
+<article class="card" style="padding:24px 28px;">
+  <div class="tag {{ item.source_type }}">{{ item.source_label }}</div>
+  <h2 style="margin-bottom:10px;">{{ item.title }}</h2>
+  <p style="font-size:16px; color:#1f2937; line-height:1.65;">{{ item.summary }}</p>
+  <div class="meta" style="margin-top:18px;">
+    {% if item.score is not none %}<span class="score">Relevance {{ item.score }}/100</span>{% endif %}
+    {% if item.published_at %}<span>Published {{ item.published_at.strftime('%b %d, %Y') }}</span>{% endif %}
+    {% if item.sent_at %}<span>Sent {{ item.sent_at.strftime('%b %d, %Y') }}</span>{% endif %}
+  </div>
+  <div style="margin-top:22px;">
+    <a class="read-more" href="{{ item.url }}" target="_blank" rel="noopener">Read the original</a>
+  </div>
+</article>
+
+<div style="margin-top:24px;">
+  <a href="/archive" style="font-size:14px; color:var(--text-muted);">← Back to archive</a>
+</div>
+{% endblock %}

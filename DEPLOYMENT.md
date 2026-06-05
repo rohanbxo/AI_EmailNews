@@ -114,6 +114,26 @@ uv run python main.py
 
 ---
 
-## Alternative: deploy to Render
+## Deploy the public archive site (optional)
 
-`render.yaml` is still in the repo if you'd rather use Render's blueprint deploy. It provisions a Postgres database and a cron job. Note Render's free Postgres expires after 30 days; the GitHub Actions + Neon stack above doesn't have that limit.
+The repo ships with a small FastAPI archive at [app/web/main.py](app/web/main.py). Deploy it so you have a live URL to share (resume, portfolio, interviews).
+
+**On Render (free tier):**
+
+1. Push the repo to GitHub if you haven't already.
+2. In Render dashboard: **New → Blueprint** → connect the repo. Render reads [render.yaml](render.yaml).
+3. It provisions a web service called `ai-news-web`.
+4. In the service's **Environment** tab, add one secret: `DATABASE_URL` — same Neon connection string you used for the cron.
+5. First deploy takes ~2 minutes. You get a URL like `https://ai-news-web.onrender.com`.
+
+**Cold-start caveat:** Render's free tier sleeps the service after 15 minutes of no traffic. The first visitor after a sleep waits ~15-30 seconds. Subsequent visits are instant. Fine for a portfolio link.
+
+**Alternative hosts:**
+- **Fly.io** — free tier doesn't sleep; needs a `fly.toml` (not included).
+- **Vercel** — works for Python serverless but adds complexity for SQL connections.
+- **Railway** — $5/mo, no sleep; uses the included [Procfile](Procfile).
+- **Self-host** — just `uvicorn app.web.main:app --host 0.0.0.0 --port 8000` behind nginx.
+
+## Alternative cron: Render instead of GitHub Actions
+
+The `cron` block in `render.yaml` is commented out by default — GitHub Actions is the recommended scheduler because Render's free Postgres expires after 30 days. If you'd rather run the daily pipeline on Render, uncomment that block and add the same secrets the GitHub workflow uses.

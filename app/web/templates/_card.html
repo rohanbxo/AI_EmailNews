@@ -1,0 +1,10 @@
+<article class="card">
+  <div class="tag {{ item.source_type }}">{{ item.source_label }}</div>
+  <h3><a href="/digest/{{ item.id }}">{{ item.title }}</a></h3>
+  <p>{{ item.summary }}</p>
+  <div class="meta">
+    {% if item.score is not none %}<span class="score">Relevance {{ item.score }}/100</span>{% endif %}
+    {% if item.published_at %}<span>{{ item.published_at.strftime('%b %d, %Y') }}</span>{% endif %}
+    <a href="{{ item.url }}" target="_blank" rel="noopener">Open original</a>
+  </div>
+</article>

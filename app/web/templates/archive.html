@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Archive — AI News Digest{% endblock %}
+
+{% block content %}
+<h2>Archive</h2>
+<p class="subtitle">Every past digest, grouped by day.</p>
+
+{% if groups %}
+  {% for group in groups %}
+    <div class="day-heading">{{ group.day.strftime('%A, %B %d, %Y') }}</div>
+    {% for item in group['items'] %}
+      {% include "_card.html" %}
+    {% endfor %}
+  {% endfor %}
+
+  <div class="pagination">
+    {% if has_prev %}
+      <a href="/archive?page={{ page - 1 }}">← Newer</a>
+    {% else %}
+      <span>← Newer</span>
+    {% endif %}
+    {% if has_next %}
+      <a href="/archive?page={{ page + 1 }}">Older →</a>
+    {% else %}
+      <span>Older →</span>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="empty">The archive is empty — wait for the next daily run.</div>
+{% endif %}
+{% endblock %}

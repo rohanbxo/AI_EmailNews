@@ -1,35 +1,36 @@
-databases:
-  - name: ai-news-db
-    plan: free
-    databaseName: ai_news
-    user: ai_news
-
 services:
-  - type: cron
-    name: ai-news-daily
+  # Public read-only archive site (FastAPI).
+  # Reuses the Neon Postgres database — provide DATABASE_URL as a secret.
+  - type: web
+    name: ai-news-web
     runtime: python
     plan: free
-    schedule: "0 13 * * *"   # 13:00 UTC daily
     buildCommand: "pip install -e ."
-    startCommand: "python main.py"
+    startCommand: "uvicorn app.web.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: ai-news-db
-          property: connectionString
-      - key: GROQ_API_KEY
         sync: false
-      - key: MY_EMAIL
-        sync: false
-      - key: APP_PASSWORD
-        sync: false
-      - key: WEBSHARE_USERNAME
-        sync: false
-      - key: WEBSHARE_PASSWORD
-        sync: false
-      - key: DIGEST_LOOKBACK_HOURS
-        value: "24"
-      - key: EMAIL_TOP_N
-        value: "10"
-      - key: LLM_MODEL
-        value: "llama-3.3-70b-versatile"
+      - key: PYTHON_VERSION
+        value: "3.12"
+
+  # Optional: also run the daily pipeline on Render (free Postgres expires in 30 days,
+  # so most users keep the cron on GitHub Actions). Uncomment to use.
+  # - type: cron
+  #   name: ai-news-daily
+  #   runtime: python
+  #   plan: free
+  #   schedule: "0 13 * * *"
+  #   buildCommand: "pip install -e ."
+  #   startCommand: "python main.py"
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       sync: false
+  #     - key: GROQ_API_KEY
+  #       sync: false
+  #     - key: MY_EMAIL
+  #       sync: false
+  #     - key: APP_PASSWORD
+  #       sync: false
+  #     - key: LLM_MODEL
+  #       value: "llama-3.3-70b-versatile"
