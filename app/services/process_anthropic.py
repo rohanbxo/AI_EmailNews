@@ -52,6 +52,11 @@ class ProcessAnthropic(ProcessService):
             if md:
                 art.markdown = md
                 n += 1
+        for art in repo.blog_needing_markdown():
+            md = html_to_markdown(art.raw_html) or art.summary
+            if md:
+                art.markdown = md
+                n += 1
         return n
 
 

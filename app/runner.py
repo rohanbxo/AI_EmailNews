@@ -9,7 +9,14 @@ from typing import Callable, List, Tuple
 
 from .config import DIGEST_LOOKBACK_HOURS
 from .database import Repository, get_session
-from .scrapers import AnthropicScraper, OpenAIScraper, YouTubeScraper
+from .scrapers import (
+    AnthropicScraper,
+    HuggingFaceScraper,
+    ImportAIScraper,
+    LatentSpaceScraper,
+    OpenAIScraper,
+    YouTubeScraper,
+)
 
 
 log = logging.getLogger(__name__)
@@ -42,6 +49,29 @@ def _save_openai(scraper, repo: Repository, hours: int) -> int:
     return _save_rss_articles(scraper, repo, hours, repo.bulk_create_openai_articles)
 
 
+def _make_save_blog(source: str):
+    """Returns a save fn that writes RSS articles to the generic blog table."""
+
+    def _save(scraper, repo: Repository, hours: int) -> int:
+        articles = scraper.get_articles(hours=hours)
+        rows = []
+        for a in articles:
+            rows.append(
+                {
+                    "source": source,
+                    "url": a.url,
+                    "title": a.title,
+                    "author": a.author,
+                    "published_at": a.published_at,
+                    "summary": a.summary,
+                    "raw_html": a.raw_html,
+                }
+            )
+        return repo.bulk_create_blog_articles(rows)
+
+    return _save
+
+
 def _save_youtube(scraper, repo: Repository, hours: int) -> int:
     videos = scraper.get_articles(hours=hours)
     rows = [
@@ -62,6 +92,9 @@ def _save_youtube(scraper, repo: Repository, hours: int) -> int:
 SCRAPER_REGISTRY: List[Tuple[str, object, Callable]] = [
     ("anthropic", AnthropicScraper(), _save_anthropic),
     ("openai", OpenAIScraper(), _save_openai),
+    ("huggingface", HuggingFaceScraper(), _make_save_blog("huggingface")),
+    ("importai", ImportAIScraper(), _make_save_blog("importai")),
+    ("latentspace", LatentSpaceScraper(), _make_save_blog("latentspace")),
     ("youtube", YouTubeScraper(), _save_youtube),
 ]
 

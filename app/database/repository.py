@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from .models import AnthropicArticle, Digest, OpenAIArticle, YouTubeVideo
+from .models import AnthropicArticle, BlogArticle, Digest, OpenAIArticle, YouTubeVideo
 
 
 def _utcnow() -> datetime:
@@ -40,6 +40,9 @@ class Repository:
     def bulk_create_youtube_videos(self, rows: List[dict]) -> int:
         return self._bulk_insert_ignore(YouTubeVideo, rows, ["video_id"])
 
+    def bulk_create_blog_articles(self, rows: List[dict]) -> int:
+        return self._bulk_insert_ignore(BlogArticle, rows, ["url"])
+
     # -- Fetchers for processors ---------------------------------------------
 
     def anthropic_needing_markdown(self, limit: int = 50) -> List[AnthropicArticle]:
@@ -56,6 +59,15 @@ class Repository:
             select(OpenAIArticle)
             .where(OpenAIArticle.markdown.is_(None))
             .order_by(OpenAIArticle.published_at.desc().nullslast())
+            .limit(limit)
+        )
+        return list(self.session.scalars(stmt))
+
+    def blog_needing_markdown(self, limit: int = 50) -> List[BlogArticle]:
+        stmt = (
+            select(BlogArticle)
+            .where(BlogArticle.markdown.is_(None))
+            .order_by(BlogArticle.published_at.desc().nullslast())
             .limit(limit)
         )
         return list(self.session.scalars(stmt))
@@ -87,6 +99,16 @@ class Repository:
             .outerjoin(Digest, Digest.openai_article_id == OpenAIArticle.id)
             .where(Digest.id.is_(None))
             .where(OpenAIArticle.markdown.is_not(None))
+            .limit(limit)
+        )
+        return list(self.session.scalars(stmt))
+
+    def blog_needing_digest(self, limit: int = 50) -> List[BlogArticle]:
+        stmt = (
+            select(BlogArticle)
+            .outerjoin(Digest, Digest.blog_article_id == BlogArticle.id)
+            .where(Digest.id.is_(None))
+            .where(BlogArticle.markdown.is_not(None))
             .limit(limit)
         )
         return list(self.session.scalars(stmt))

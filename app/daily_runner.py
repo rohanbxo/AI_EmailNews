@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 
 from .database import Base, engine
+from .database.migrate import main as _run_migrations
 from .runner import run_all_scrapers
 from .services.process_anthropic import ProcessAnthropic
 from .services.process_curator import ProcessCurator
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 def _ensure_schema() -> None:
     # Register models on import side-effect via app.database.__init__
     Base.metadata.create_all(engine)
+    _run_migrations()
 
 
 def run_daily_pipeline() -> None:

@@ -1,9 +1,10 @@
 from .connection import get_session, engine, Base, ENVIRONMENT
 from .models import (
     AnthropicArticle,
+    BlogArticle,
+    Digest,
     OpenAIArticle,
     YouTubeVideo,
-    Digest,
 )
 from .repository import Repository
 
@@ -15,6 +16,7 @@ __all__ = [
     "AnthropicArticle",
     "OpenAIArticle",
     "YouTubeVideo",
+    "BlogArticle",
     "Digest",
     "Repository",
 ]

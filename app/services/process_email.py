@@ -19,6 +19,9 @@ _SOURCE_LABEL = {
     "anthropic": "Anthropic",
     "openai": "OpenAI",
     "youtube": "YouTube",
+    "huggingface": "Hugging Face",
+    "importai": "Import AI",
+    "latentspace": "Latent Space",
 }
 
 

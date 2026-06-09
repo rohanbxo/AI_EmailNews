@@ -48,6 +48,26 @@ class ProcessDigest(ProcessService):
             )
             n += 1
 
+        _BLOG_SOURCE_LABELS = {
+            "huggingface": "Hugging Face blog",
+            "importai": "Import AI newsletter",
+            "latentspace": "Latent Space",
+        }
+        for art in repo.blog_needing_digest():
+            label = _BLOG_SOURCE_LABELS.get(art.source, art.source)
+            result = self.agent.summarize(
+                title=art.title, body=art.markdown or "", source=label
+            )
+            repo.create_digest(
+                source_type=art.source,
+                title=art.title,
+                url=art.url,
+                summary=result.summary,
+                published_at=art.published_at,
+                blog_article_id=art.id,
+            )
+            n += 1
+
         for vid in repo.youtube_needing_digest():
             result = self.agent.summarize(
                 title=vid.title,

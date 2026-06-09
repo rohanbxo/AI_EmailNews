@@ -82,6 +82,35 @@ class YouTubeVideo(Base, _TimestampMixin):
     )
 
 
+class BlogArticle(Base, _TimestampMixin):
+    """Generic blog article from any RSS source.
+
+    Rather than create a new table for every new source, additional RSS
+    feeds (HuggingFace, ImportAI, Latent Space, ...) share this table and
+    are distinguished by `source`. The original Anthropic / OpenAI tables
+    were kept for backwards compatibility with existing data.
+    """
+
+    __tablename__ = "blog_articles"
+
+    id = Column(Integer, primary_key=True)
+    source = Column(String(64), nullable=False)  # e.g. "huggingface", "importai"
+    url = Column(String(1024), nullable=False, unique=True)
+    title = Column(String(512), nullable=False)
+    author = Column(String(256))
+    published_at = Column(DateTime(timezone=True))
+    summary = Column(Text)
+    raw_html = Column(Text)
+    markdown = Column(Text)
+
+    digest = relationship("Digest", back_populates="blog_article", uselist=False)
+
+    __table_args__ = (
+        Index("ix_blog_published_at", "published_at"),
+        Index("ix_blog_source", "source"),
+    )
+
+
 class Digest(Base, _TimestampMixin):
     """Unified summary record produced for any source content."""
 
@@ -99,10 +128,12 @@ class Digest(Base, _TimestampMixin):
     anthropic_article_id = Column(Integer, ForeignKey("anthropic_articles.id"))
     openai_article_id = Column(Integer, ForeignKey("openai_articles.id"))
     youtube_video_id = Column(Integer, ForeignKey("youtube_videos.id"))
+    blog_article_id = Column(Integer, ForeignKey("blog_articles.id"))
 
     anthropic_article = relationship("AnthropicArticle", back_populates="digest")
     openai_article = relationship("OpenAIArticle", back_populates="digest")
     youtube_video = relationship("YouTubeVideo", back_populates="digest")
+    blog_article = relationship("BlogArticle", back_populates="digest")
 
     __table_args__ = (
         UniqueConstraint(
@@ -110,6 +141,7 @@ class Digest(Base, _TimestampMixin):
             "anthropic_article_id",
             "openai_article_id",
             "youtube_video_id",
+            "blog_article_id",
             name="uq_digest_source",
         ),
         Index("ix_digest_sent_at", "sent_at"),
