@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
+from sqlalchemy.orm import selectinload
 
 from ..config import EMAIL_TOP_N
 from ..database import Digest, get_session
@@ -88,13 +89,19 @@ def _latest_digest_day() -> Optional[date]:
     return latest.astimezone(timezone.utc).date()
 
 
-def _digests_for_day(day: date) -> List[Digest]:
-    """Sent, non-duplicate digests for a given UTC calendar day (canonicals only)."""
+def _serialized_items_for_day(day: date) -> List[dict]:
+    """Sent, non-duplicate digests for a given UTC calendar day, pre-serialized.
+
+    Serialization happens inside the session so lazy-loaded relationships
+    (e.g. `duplicates`) don't blow up as detached-instance errors after the
+    session closes.
+    """
     start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
     end = start + timedelta(days=1)
     with get_session() as s:
         stmt = (
             select(Digest)
+            .options(selectinload(Digest.duplicates))
             .where(Digest.sent_at.is_not(None))
             .where(Digest.dup_of_id.is_(None))
             .where(Digest.sent_at >= start)
@@ -102,7 +109,8 @@ def _digests_for_day(day: date) -> List[Digest]:
             .order_by(Digest.score.desc().nullslast(), Digest.published_at.desc().nullslast())
             .limit(EMAIL_TOP_N)
         )
-        return list(s.scalars(stmt))
+        digests = list(s.scalars(stmt))
+        return [_serialize(d, include_dups=True) for d in digests]
 
 
 # -- routes -----------------------------------------------------------------
@@ -111,13 +119,13 @@ def _digests_for_day(day: date) -> List[Digest]:
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
     day = _latest_digest_day()
-    digests = _digests_for_day(day) if day else []
+    items = _serialized_items_for_day(day) if day else []
     return templates.TemplateResponse(
         request,
         "index.html",
         {
             "day": day,
-            "items": [_serialize(d, include_dups=True) for d in digests],
+            "items": items,
             "profile": USER_PROFILE,
         },
     )
@@ -144,8 +152,8 @@ def archive(request: Request, page: int = Query(1, ge=1)) -> HTMLResponse:
 
     grouped = []
     for day in days:
-        digests = _digests_for_day(day)
-        grouped.append({"day": day, "items": [_serialize(d, include_dups=True) for d in digests]})
+        items = _serialized_items_for_day(day)
+        grouped.append({"day": day, "items": items})
 
     return templates.TemplateResponse(
         request,
@@ -171,6 +179,7 @@ def digest_detail(request: Request, digest_id: int) -> HTMLResponse:
             canonical = s.get(Digest, d.dup_of_id)
             if canonical is not None:
                 d = canonical
+        # Serialize inside the session — `duplicates` is lazy-loaded.
         item = _serialize(d, include_dups=True)
     return templates.TemplateResponse(
         request,
