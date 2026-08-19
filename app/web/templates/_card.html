@@ -7,4 +7,14 @@
     {% if item.published_at %}<span>{{ item.published_at.strftime('%b %d, %Y') }}</span>{% endif %}
     <a href="{{ item.url }}" target="_blank" rel="noopener">Open original</a>
   </div>
+  {% if item.also_covered_by %}
+    <div class="also">
+      Also covered by:
+      {% for x in item.also_covered_by %}
+        <a href="{{ x.url }}" target="_blank" rel="noopener" title="{{ x.title }}">
+          <span class="tag {{ x.source_type }}">{{ x.source_label }}</span>
+        </a>{% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
 </article>

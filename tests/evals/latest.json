@@ -1,0 +1,131 @@
+{
+  "generated_at": "2026-08-19T20:10:01.684756+00:00",
+  "elapsed_seconds": 38.2,
+  "model": "openai/gpt-oss-20b",
+  "n_cases": 6,
+  "avg_total": 72.9,
+  "min_total": 24.4,
+  "max_total": 94.0,
+  "per_axis": {
+    "faithfulness": 3.5,
+    "informativeness": 4.67,
+    "concision": 4.67,
+    "no_hype": 4.33
+  },
+  "cases": [
+    {
+      "case_id": "release-numbers-1",
+      "faithfulness": 5,
+      "informativeness": 5,
+      "concision": 5,
+      "no_hype": 1,
+      "required_facts_hit": 0.5,
+      "forbidden_terms_hit": [],
+      "notes": {
+        "faithfulness": "All claims in the summary are directly supported by the source text.",
+        "informativeness": "The summary preserves all specific numbers, names, benchmarks, and mechanisms from the source.",
+        "concision": "The summary is concise, consisting of four sentences with no filler.",
+        "no_hype": "It contains the marketing phrase \"state\u2011of\u2011the\u2011art\", which is not present in the source and violates the no\u2011hype rule."
+      },
+      "summary_text": "Anthropic has released Claude\u202f4.5\u202fSonnet, a new state\u2011of\u2011the\u2011art model. It scores 82.1\u202f% on SWE\u2011bench Verified, up from 74.3\u202f% for the prior version, and 89.4\u202f% on MMLU. Pricing is $3\u202f/\u202fM input tokens and $15\u202f/\u202fM output tokens, a 40\u202f% cut versus Claude\u202f3.5\u202fSonnet at launch. The model is available today via the API, Amazon Bedrock, and Google Cloud Vertex AI, with Tier\u202f1 rate limits doubled to 100,000 tokens per minute.",
+      "total": 67.5,
+      "llm_avg": 4.0
+    },
+    {
+      "case_id": "research-paper-mechanistic",
+      "faithfulness": 1,
+      "informativeness": 5,
+      "concision": 5,
+      "no_hype": 5,
+      "required_facts_hit": 1.0,
+      "forbidden_terms_hit": [],
+      "notes": {
+        "faithfulness": "The summary incorrectly attributes the work to Hugging Face, which is not mentioned in the source, constituting a hallucination.",
+        "informativeness": "It accurately reports the number of features, layer, model name, specific monosemantic directions, the 42% reduction, and the release of weights and visualizer.",
+        "concision": "The summary is concise, consisting of three well\u2011structured sentences with no filler.",
+        "no_hype": "It contains no marketing or hype language."
+      },
+      "summary_text": "Hugging Face trained sparse autoencoders with 262\u202fk features on the residual stream of layer\u202f20 in Gemma\u20112\u20119B, uncovering monosemantic decoder directions such as \u201clegal terminology,\u201d \u201ccode error messages,\u201d and \u201crefusal to answer.\u201d Activation\u2011patching experiments show that ablating the \u201crefusal\u201d direction reduces the model\u2019s refusal rate on harmful prompts by 42\u202f%, providing a causal link between a single interpretable feature and safety behavior. The SAE weights and a browser\u2011based visualizer are released, enabling researchers to explore and validate interpretable features in large language models.",
+      "total": 82.5,
+      "llm_avg": 4.0
+    },
+    {
+      "case_id": "policy-post-vague",
+      "faithfulness": 5,
+      "informativeness": 5,
+      "concision": 5,
+      "no_hype": 5,
+      "required_facts_hit": 1.0,
+      "forbidden_terms_hit": [
+        "benchmark"
+      ],
+      "notes": {
+        "faithfulness": "All claims are directly supported by the source text.",
+        "informativeness": "The summary accurately reflects the source\u2019s content, which contains no specific numbers or benchmarks.",
+        "concision": "The summary is 4 concise sentences with no filler.",
+        "no_hype": "No marketing or hype language is present."
+      },
+      "summary_text": "OpenAI outlines its approach to AI safety, emphasizing responsible development, transparency, and collaboration with governments and civil society. The organization stresses that its goal is to ensure that artificial general intelligence benefits all of humanity. It highlights a dedicated research team focused on safety challenges and the importance of open dialogue with external stakeholders. No specific models, numbers, or benchmarks are mentioned.",
+      "total": 85.0,
+      "llm_avg": 5.0
+    },
+    {
+      "case_id": "youtube-podcast",
+      "faithfulness": 4,
+      "informativeness": 4,
+      "concision": 5,
+      "no_hype": 5,
+      "required_facts_hit": 0.75,
+      "forbidden_terms_hit": [],
+      "notes": {
+        "faithfulness": "Only the added last name is not in source; otherwise all claims are supported.",
+        "informativeness": "Includes all key numbers and mechanisms; last name is extra.",
+        "concision": "Exactly five sentences, no filler.",
+        "no_hype": "No marketing language used."
+      },
+      "summary_text": "Yohei Nakajima, the creator of BabyAGI, explained that the system uses a simple while\u2011loop with an LLM to decompose a goal into subtasks, execute them, and generate new tasks. The original design often caused agents to loop indefinitely and waste tokens. To curb this, the team added a task priority queue and a critic model that scores whether each subtask actually advances the goal. Early tests show the new setup triples task completion rates and reduces token usage by 40\u202f%. These results illustrate a practical way to scale autonomous agents without relying on complex planning algorithms.",
+      "total": 83.8,
+      "llm_avg": 4.5
+    },
+    {
+      "case_id": "release-with-caveats",
+      "faithfulness": 5,
+      "informativeness": 5,
+      "concision": 5,
+      "no_hype": 5,
+      "required_facts_hit": 0.8,
+      "forbidden_terms_hit": [],
+      "notes": {
+        "faithfulness": "All claims in the summary are directly supported by the source text with no added or omitted information.",
+        "informativeness": "The summary preserves all specific numbers, names, benchmarks, and technical details from the source.",
+        "concision": "The summary consists of four concise sentences with no padding or filler.",
+        "no_hype": "The language is neutral and contains no marketing or hype terms."
+      },
+      "summary_text": "Meta unveiled Llama\u202f5, a 400\u202fbillion\u2011parameter mixture\u2011of\u2011experts model that activates 40\u202fbillion parameters at a time. It scores 91.2\u202f% on the MMLU benchmark, matching GPT\u20114o. The license restricts commercial use to organizations with fewer than 700\u202fmillion monthly active users, a carve\u2011out that excludes major cloud providers. Model weights are hosted on Hugging\u202fFace under the license, and deploying the full model requires a minimum of eight NVIDIA H100 GPUs.",
+      "total": 94.0,
+      "llm_avg": 5.0
+    },
+    {
+      "case_id": "empty-substance",
+      "faithfulness": 1,
+      "informativeness": 4,
+      "concision": 3,
+      "no_hype": 5,
+      "required_facts_hit": 1.0,
+      "forbidden_terms_hit": [
+        "released",
+        "benchmark",
+        "model"
+      ],
+      "notes": {
+        "faithfulness": "The summary includes an unsupported claim about continued progress on research and product roadmap, which is not in the source.",
+        "informativeness": "It preserves the key names and content from the source, though it adds an unsupported inference.",
+        "concision": "The summary is 4 sentences, within the 3-5 range, but includes an extra claim not in the source, which could be considered padding.",
+        "no_hype": "The summary contains no marketing hype language."
+      },
+      "summary_text": "Anthropic\u2019s CEO Dario released a brief note thanking the team, customers, and partners and emphasizing that it is an exciting time for AI development. He signaled that additional announcements are forthcoming, suggesting continued progress on the company\u2019s research and product roadmap. The message does not disclose any specific model names, metrics, or benchmarks. The note serves primarily as a morale boost and a teaser for future updates.",
+      "total": 24.4,
+      "llm_avg": 3.25
+    }
+  ]
+}

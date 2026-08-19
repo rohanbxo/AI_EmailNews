@@ -1,3 +1,4 @@
+from . import embedding_agent
 from .base import BaseAgent
 from .curator_agent import CuratorAgent, ScoredItem
 from .digest_agent import DigestAgent, DigestResult
@@ -11,4 +12,5 @@ __all__ = [
     "DigestResult",
     "EmailAgent",
     "EmailContent",
+    "embedding_agent",
 ]

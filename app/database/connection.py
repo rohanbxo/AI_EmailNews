@@ -40,7 +40,8 @@ if ENVIRONMENT == "PRODUCTION":
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
+    pool_pre_ping=True,     # verify liveness on checkout (dead connections auto-refreshed)
+    pool_recycle=280,        # Neon idle-idles at 300s; recycle before then
     pool_size=5,
     max_overflow=5,
     connect_args=_connect_args,

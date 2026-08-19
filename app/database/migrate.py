@@ -18,6 +18,19 @@ MIGRATIONS = [
         ADD COLUMN IF NOT EXISTS blog_article_id INTEGER
         REFERENCES blog_articles(id)
     """,
+    # 2026-08-19: semantic-dedup fields.
+    """
+    ALTER TABLE digests
+        ADD COLUMN IF NOT EXISTS embedding BYTEA
+    """,
+    """
+    ALTER TABLE digests
+        ADD COLUMN IF NOT EXISTS dup_of_id INTEGER
+        REFERENCES digests(id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS ix_digest_dup_of ON digests(dup_of_id)
+    """,
 ]
 
 

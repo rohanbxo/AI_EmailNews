@@ -132,10 +132,16 @@ class Repository:
     # -- Curation / email ----------------------------------------------------
 
     def unsent_digests(self, hours: int = 24) -> List[Digest]:
+        """Digests eligible for ranking + emailing today.
+
+        Excludes near-duplicates (dup_of_id IS NOT NULL) — those are handled
+        by ProcessDedup and surfaced under their canonical on the website.
+        """
         cutoff = _utcnow() - timedelta(hours=hours)
         stmt = (
             select(Digest)
             .where(Digest.sent_at.is_(None))
+            .where(Digest.dup_of_id.is_(None))
             .where(
                 (Digest.published_at.is_(None)) | (Digest.published_at >= cutoff)
             )

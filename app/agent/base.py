@@ -8,18 +8,25 @@ Provider resolution order:
   2. GEMINI_API_KEY -> Google AI Studio
   3. OPENAI_API_KEY -> OpenAI (paid)
 You can also force a custom endpoint via LLM_BASE_URL.
+
+Model resolution:
+  Groq periodically decommissions models (returning 404 model_not_found).
+  We support a fallback chain: LLM_MODEL is tried first, then each entry in
+  LLM_MODEL_FALLBACKS (comma-separated). The first model that works is
+  cached for the rest of the run and logged loudly so ops can update the
+  primary.
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from openai import OpenAI
+from openai import NotFoundError, OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from ..config import LLM_MODEL
+from ..config import LLM_MODEL, LLM_MODEL_FALLBACKS
 
 
 log = logging.getLogger(__name__)
@@ -49,6 +56,19 @@ def _resolve_client_config() -> Tuple[str, Optional[str]]:
     )
 
 
+# Process-wide cache: once a model works for this run, keep using it.
+_active_model: Optional[str] = None
+
+
+def _model_chain() -> List[str]:
+    """Ordered list of models to try: primary first, then fallbacks."""
+    chain = [LLM_MODEL]
+    for m in LLM_MODEL_FALLBACKS:
+        if m and m not in chain:
+            chain.append(m)
+    return chain
+
+
 class BaseAgent:
     """LLM-backed agent.
 
@@ -56,7 +76,6 @@ class BaseAgent:
     """
 
     system_prompt: str = "You are a helpful assistant."
-    model: str = LLM_MODEL
     temperature: float = 0.2
 
     def __init__(self, client: Optional[OpenAI] = None):
@@ -66,17 +85,55 @@ class BaseAgent:
             api_key, base_url = _resolve_client_config()
             self.client = OpenAI(api_key=api_key, base_url=base_url)
 
+    @property
+    def model(self) -> str:
+        return _active_model or LLM_MODEL
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
     def _chat(self, messages, *, response_format: Optional[dict] = None) -> str:
-        kwargs: Dict[str, Any] = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": self.temperature,
-        }
-        if response_format is not None:
-            kwargs["response_format"] = response_format
-        resp = self.client.chat.completions.create(**kwargs)
-        return resp.choices[0].message.content or ""
+        global _active_model
+        last_exc: Optional[Exception] = None
+
+        # Try the cached model first; fall back to the chain only if it 404s.
+        candidates = [_active_model] if _active_model else _model_chain()
+        for model_name in candidates:
+            if model_name is None:
+                continue
+            kwargs: Dict[str, Any] = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": self.temperature,
+            }
+            if response_format is not None:
+                kwargs["response_format"] = response_format
+            try:
+                resp = self.client.chat.completions.create(**kwargs)
+                if _active_model != model_name:
+                    if _active_model is not None:
+                        log.warning(
+                            "LLM model changed: '%s' -> '%s' (previous unavailable)",
+                            _active_model,
+                            model_name,
+                        )
+                    _active_model = model_name
+                return resp.choices[0].message.content or ""
+            except NotFoundError as e:
+                log.warning(
+                    "Model '%s' not available (404 model_not_found). "
+                    "Trying next in fallback chain.",
+                    model_name,
+                )
+                last_exc = e
+                # If we had cached this model, invalidate and restart the search.
+                if _active_model == model_name:
+                    _active_model = None
+                    candidates = _model_chain()
+                continue
+
+        raise RuntimeError(
+            f"All models exhausted. Tried: {_model_chain()}. "
+            f"Update LLM_MODEL / LLM_MODEL_FALLBACKS (see https://console.groq.com/docs/models)."
+        ) from last_exc
 
     def complete(self, user_prompt: str) -> str:
         return self._chat(

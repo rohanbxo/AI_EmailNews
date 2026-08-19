@@ -40,7 +40,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           WEBSHARE_USERNAME: ${{ secrets.WEBSHARE_USERNAME }}
           WEBSHARE_PASSWORD: ${{ secrets.WEBSHARE_PASSWORD }}
-          LLM_MODEL: ${{ vars.LLM_MODEL || 'llama-3.3-70b-versatile' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'openai/gpt-oss-20b' }}
+          LLM_MODEL_FALLBACKS: ${{ vars.LLM_MODEL_FALLBACKS || '' }}
           DIGEST_LOOKBACK_HOURS: ${{ vars.DIGEST_LOOKBACK_HOURS || '24' }}
           EMAIL_TOP_N: ${{ vars.EMAIL_TOP_N || '10' }}
         run: uv run python main.py

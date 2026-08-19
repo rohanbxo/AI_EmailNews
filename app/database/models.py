@@ -6,6 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -130,6 +131,19 @@ class Digest(Base, _TimestampMixin):
     youtube_video_id = Column(Integer, ForeignKey("youtube_videos.id"))
     blog_article_id = Column(Integer, ForeignKey("blog_articles.id"))
 
+    # Semantic embedding of `summary` (packed float32 array via numpy.tobytes()).
+    # Populated by process_digest; used by process_dedup to cluster near-duplicates.
+    embedding = Column(LargeBinary)
+
+    # If this digest is a near-duplicate of another, points to the canonical one.
+    # The canonical digest's `dup_of_id` is NULL; duplicates never get emailed.
+    dup_of_id = Column(Integer, ForeignKey("digests.id"))
+    canonical = relationship(
+        "Digest",
+        remote_side="Digest.id",
+        backref="duplicates",
+    )
+
     anthropic_article = relationship("AnthropicArticle", back_populates="digest")
     openai_article = relationship("OpenAIArticle", back_populates="digest")
     youtube_video = relationship("YouTubeVideo", back_populates="digest")
@@ -146,4 +160,5 @@ class Digest(Base, _TimestampMixin):
         ),
         Index("ix_digest_sent_at", "sent_at"),
         Index("ix_digest_published_at", "published_at"),
+        Index("ix_digest_dup_of", "dup_of_id"),
     )

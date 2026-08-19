@@ -1,0 +1,88 @@
+[
+  {
+    "id": "release-numbers-1",
+    "purpose": "Numbers preservation — summary must not lose the concrete benchmark numbers.",
+    "source": "Anthropic blog",
+    "title": "Claude 4.5 Sonnet released",
+    "body": "Today we're releasing Claude 4.5 Sonnet, our new state-of-the-art model. It scores 82.1% on SWE-bench Verified, up from 74.3% for the previous version. On MMLU it reaches 89.4%. Pricing is $3 / M input tokens and $15 / M output tokens — a 40% reduction versus Claude 3.5 Sonnet at launch. The model is available today via the API, on Amazon Bedrock, and on Google Cloud Vertex AI. Rate limits for Tier 1 customers doubled to 100,000 tokens per minute.",
+    "required_facts": [
+      "Claude 4.5 Sonnet",
+      "SWE-bench",
+      "82.1",
+      "MMLU",
+      "pricing OR $3 OR $15",
+      "40% OR reduction"
+    ],
+    "forbidden_terms": ["revolutionary", "game-changing", "unprecedented"]
+  },
+  {
+    "id": "research-paper-mechanistic",
+    "purpose": "Technical content — summary should be readable to an ML engineer without dumbing down the mechanism.",
+    "source": "Hugging Face blog",
+    "title": "Sparse autoencoders find interpretable features in Gemma-2",
+    "body": "We trained sparse autoencoders (SAEs) with 262k features on residual stream activations at layer 20 of Gemma-2-9B. Each SAE decoder direction corresponds to a monosemantic feature — examples include 'legal terminology', 'code error messages', and 'refusal to answer'. Using activation patching, we causally verified that ablating the 'refusal' feature reduces refusal rate on harmful prompts by 42%. The paper open-sources all SAE weights and a browser-based feature visualizer.",
+    "required_facts": [
+      "sparse autoencoders OR SAE",
+      "Gemma",
+      "monosemantic OR interpretable",
+      "42% OR refusal"
+    ],
+    "forbidden_terms": ["revolutionary", "game-changing", "breakthrough"]
+  },
+  {
+    "id": "policy-post-vague",
+    "purpose": "Low-substance corporate post — summary must not invent facts that weren't in the source.",
+    "source": "OpenAI blog",
+    "title": "Our approach to AI safety",
+    "body": "At OpenAI, our mission is to ensure that artificial general intelligence benefits all of humanity. We take safety seriously and are committed to responsible development. We work closely with governments and civil society. We believe transparency and collaboration are essential. Our team of researchers is dedicated to this work.",
+    "required_facts": [
+      "safety",
+      "mission OR approach"
+    ],
+    "forbidden_terms": [
+      "GPT-5", "Claude", "benchmark", "specific number", "released"
+    ]
+  },
+  {
+    "id": "youtube-podcast",
+    "purpose": "Long transcript, meandering — summary should extract the substantive takeaways and drop chitchat.",
+    "source": "YouTube — Latent Space podcast",
+    "title": "Building AI agents at scale — with Yohei Nakajima",
+    "body": "so um welcome back to the podcast. today we have Yohei who created BabyAGI. hey Yohei thanks for coming on. so tell us a bit about your background before AI. yeah so I was working in VC and I got into AI in early 2023. right so tell us about BabyAGI. so BabyAGI is basically a task loop — you give it a goal, it decomposes into subtasks, executes them, and adds new tasks. the core insight was that you don't need fancy planning, just a while loop and an LLM. we saw people extend it in tons of directions. one issue though is that agents get stuck in loops and burn tokens. we've been experimenting with a 'task priority queue' plus a critic model that scores whether each task actually made progress. early results — task completion up 3x, token usage down 40%.",
+    "required_facts": [
+      "BabyAGI OR agent",
+      "task loop OR decomposes OR subtask",
+      "critic OR priority queue",
+      "3x OR 40%"
+    ],
+    "forbidden_terms": ["um", "so tell us", "welcome back"]
+  },
+  {
+    "id": "release-with-caveats",
+    "purpose": "Nuance — summary should mention the meaningful caveat, not just the marketing claim.",
+    "source": "Import AI newsletter",
+    "title": "Meta releases Llama 5 400B",
+    "body": "Meta released Llama 5 today, a 400B parameter MoE model with 40B active parameters. On MMLU it scores 91.2%, matching GPT-4o. However the license restricts commercial use to organizations under 700M monthly active users — Meta's usual carve-out to exclude the largest cloud providers. Weights are hosted on Hugging Face and require accepting the license. Serving the full model requires 8xH100 minimum.",
+    "required_facts": [
+      "Llama 5 OR Meta",
+      "400B OR MoE",
+      "MMLU OR 91.2",
+      "license OR 700M OR commercial",
+      "H100 OR compute OR serving"
+    ],
+    "forbidden_terms": ["revolutionary", "open source" ]
+  },
+  {
+    "id": "empty-substance",
+    "purpose": "Adversarial — barely-substantive content should produce a barely-substantive summary, not padding.",
+    "source": "Anthropic blog",
+    "title": "A note from our CEO",
+    "body": "Hi everyone. It's an exciting time to be building AI. We're grateful to our team, our customers, and our partners. More announcements coming soon. — Dario",
+    "required_facts": [
+      "note OR announcement OR CEO OR Dario"
+    ],
+    "forbidden_terms": [
+      "released", "benchmark", "model", "GPT-5", "Claude"
+    ]
+  }
+]

@@ -8,6 +8,7 @@ from .database.migrate import main as _run_migrations
 from .runner import run_all_scrapers
 from .services.process_anthropic import ProcessAnthropic
 from .services.process_curator import ProcessCurator
+from .services.process_dedup import ProcessDedup
 from .services.process_digest import ProcessDigest
 from .services.process_email import run as run_email
 from .services.process_youtube import ProcessYouTube
@@ -31,20 +32,23 @@ def run_daily_pipeline() -> None:
 
     _ensure_schema()
 
-    log.info("Step 1/5: scraping")
+    log.info("Step 1/6: scraping")
     run_all_scrapers()
 
-    log.info("Step 2/5: markdown conversion")
+    log.info("Step 2/6: markdown conversion")
     ProcessAnthropic().run()
 
-    log.info("Step 3/5: youtube transcripts")
+    log.info("Step 3/6: youtube transcripts")
     ProcessYouTube().run()
 
-    log.info("Step 4/5: digests + curator scoring")
+    log.info("Step 4/6: digests")
     ProcessDigest().run()
-    ProcessCurator().run()
 
-    log.info("Step 5/5: email")
+    log.info("Step 5/6: semantic dedup")
+    ProcessDedup().run()
+
+    log.info("Step 6/6: curator + email")
+    ProcessCurator().run()
     sent = run_email()
     log.info("Email step sent %d items.", sent)
 

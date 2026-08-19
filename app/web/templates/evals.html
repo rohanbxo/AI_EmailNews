@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Summary quality evals — AI News Digest{% endblock %}
+
+{% block content %}
+<h2>Summary quality</h2>
+<p class="subtitle">
+  LLM-as-judge scores over a fixed set of hand-crafted eval cases.
+  Regenerated on every CI run and every commit that touches the digest agent.
+</p>
+
+{% if not report %}
+  <div class="empty">
+    No eval report yet — run <code>uv run python -m tests.evals.run_evals</code> to generate one.
+  </div>
+{% else %}
+  <div class="card" style="padding:18px 22px;">
+    <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:baseline;">
+      <div>
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;">Composite</div>
+        <div style="font-size:36px; font-weight:700; letter-spacing:-0.02em;">
+          {{ '%.1f' % report.avg_total }}<span style="font-size:16px; color:var(--text-muted); font-weight:400;">/100</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;">Cases</div>
+        <div style="font-size:18px; font-weight:600;">{{ report.n_cases }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;">Model</div>
+        <div style="font-size:14px; color:#374151;">{{ report.model }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;">Generated</div>
+        <div style="font-size:14px; color:#374151;">{{ report.generated_at[:10] }}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; display:grid; grid-template-columns:repeat(4,1fr); gap:12px;">
+      {% for axis, val in report.per_axis.items() %}
+        <div style="background:#f9fafb; border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+          <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em;">
+            {{ axis.replace('_', ' ') }}
+          </div>
+          <div style="font-size:20px; font-weight:600;">{{ '%.2f' % val }}<span style="font-size:12px; color:var(--text-muted); font-weight:400;">/5</span></div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="day-heading">Per-case scores</div>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+      <thead>
+        <tr style="text-align:left; color:var(--text-muted); font-weight:600; border-bottom:1px solid var(--border);">
+          <th style="padding:8px 6px;">Case</th>
+          <th style="padding:8px 6px; text-align:right;">Total</th>
+          <th style="padding:8px 6px; text-align:right;">Facts</th>
+          <th style="padding:8px 6px; text-align:right;">Forbidden</th>
+          <th style="padding:8px 6px; text-align:right;">F/I/C/N</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in report.cases %}
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 6px;">
+              <div style="font-weight:500;">{{ c.case_id }}</div>
+              <div style="font-size:12px; color:var(--text-muted);">{{ c.summary_text[:120] }}{% if c.summary_text|length > 120 %}…{% endif %}</div>
+            </td>
+            <td style="padding:10px 6px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600;">{{ '%.1f' % c.total }}</td>
+            <td style="padding:10px 6px; text-align:right; font-variant-numeric:tabular-nums;">{{ '%.0f' % (c.required_facts_hit * 100) }}%</td>
+            <td style="padding:10px 6px; text-align:right; font-variant-numeric:tabular-nums;">
+              {% if c.forbidden_terms_hit %}
+                <span style="color:var(--tag-youtube);">{{ c.forbidden_terms_hit|length }}</span>
+              {% else %}
+                <span style="color:var(--tag-openai);">0</span>
+              {% endif %}
+            </td>
+            <td style="padding:10px 6px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-muted);">
+              {{ c.faithfulness }}/{{ c.informativeness }}/{{ c.concision }}/{{ c.no_hype }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="subtitle" style="margin-top:22px;">
+    <strong>F/I/C/N</strong> = faithfulness / informativeness / concision / no-hype (each 1-5, LLM-judged).
+    <strong>Composite</strong> = 70% LLM axes + 30% required-facts recall, minus 15 per forbidden term.
+    See <a href="https://github.com/beerohan/AI_EmailNews/blob/main/tests/evals/README.md">the eval spec</a> for details.
+  </p>
+{% endif %}
+{% endblock %}

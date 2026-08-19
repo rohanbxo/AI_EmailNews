@@ -4,11 +4,13 @@ Routes:
   GET /            — landing page + today's top digests
   GET /archive     — paginated list of all past digests grouped by date
   GET /digest/{id} — full single-digest page (deep-link from email or archive)
+  GET /evals       — latest summary-quality eval report (LLM-as-judge)
 
 Reuses the same Neon Postgres DB as the cron pipeline. Read-only.
 """
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
@@ -47,8 +49,8 @@ _SOURCE_LABEL = {
 }
 
 
-def _serialize(d: Digest) -> dict:
-    return {
+def _serialize(d: Digest, *, include_dups: bool = False) -> dict:
+    out = {
         "id": d.id,
         "source_type": d.source_type,
         "source_label": _SOURCE_LABEL.get(d.source_type, d.source_type),
@@ -58,7 +60,22 @@ def _serialize(d: Digest) -> dict:
         "score": d.score,
         "published_at": d.published_at,
         "sent_at": d.sent_at,
+        "also_covered_by": [],
     }
+    if include_dups:
+        # `duplicates` is the reverse relationship set up on Digest.canonical.
+        dups = getattr(d, "duplicates", None) or []
+        out["also_covered_by"] = [
+            {
+                "id": x.id,
+                "source_type": x.source_type,
+                "source_label": _SOURCE_LABEL.get(x.source_type, x.source_type),
+                "title": x.title,
+                "url": x.url,
+            }
+            for x in dups
+        ]
+    return out
 
 
 def _latest_digest_day() -> Optional[date]:
@@ -72,12 +89,14 @@ def _latest_digest_day() -> Optional[date]:
 
 
 def _digests_for_day(day: date) -> List[Digest]:
+    """Sent, non-duplicate digests for a given UTC calendar day (canonicals only)."""
     start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
     end = start + timedelta(days=1)
     with get_session() as s:
         stmt = (
             select(Digest)
             .where(Digest.sent_at.is_not(None))
+            .where(Digest.dup_of_id.is_(None))
             .where(Digest.sent_at >= start)
             .where(Digest.sent_at < end)
             .order_by(Digest.score.desc().nullslast(), Digest.published_at.desc().nullslast())
@@ -98,7 +117,7 @@ def index(request: Request) -> HTMLResponse:
         "index.html",
         {
             "day": day,
-            "items": [_serialize(d) for d in digests],
+            "items": [_serialize(d, include_dups=True) for d in digests],
             "profile": USER_PROFILE,
         },
     )
@@ -126,7 +145,7 @@ def archive(request: Request, page: int = Query(1, ge=1)) -> HTMLResponse:
     grouped = []
     for day in days:
         digests = _digests_for_day(day)
-        grouped.append({"day": day, "items": [_serialize(d) for d in digests]})
+        grouped.append({"day": day, "items": [_serialize(d, include_dups=True) for d in digests]})
 
     return templates.TemplateResponse(
         request,
@@ -147,11 +166,35 @@ def digest_detail(request: Request, digest_id: int) -> HTMLResponse:
         d = s.get(Digest, digest_id)
         if d is None or d.sent_at is None:
             raise HTTPException(status_code=404, detail="Digest not found")
-        item = _serialize(d)
+        # If someone deep-links a duplicate, redirect them to the canonical.
+        if d.dup_of_id is not None:
+            canonical = s.get(Digest, d.dup_of_id)
+            if canonical is not None:
+                d = canonical
+        item = _serialize(d, include_dups=True)
     return templates.TemplateResponse(
         request,
         "digest.html",
         {"item": item, "profile": USER_PROFILE},
+    )
+
+
+_EVAL_REPORT_PATH = Path(__file__).resolve().parents[2] / "tests" / "evals" / "latest.json"
+
+
+@app.get("/evals", response_class=HTMLResponse)
+def evals(request: Request) -> HTMLResponse:
+    """Render the latest summary-quality eval report if one exists."""
+    report: Optional[dict] = None
+    if _EVAL_REPORT_PATH.exists():
+        try:
+            report = json.loads(_EVAL_REPORT_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            report = None
+    return templates.TemplateResponse(
+        request,
+        "evals.html",
+        {"report": report, "profile": USER_PROFILE},
     )
 
 

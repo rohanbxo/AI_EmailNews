@@ -1,0 +1,95 @@
+name: Summary quality evals
+
+on:
+  pull_request:
+    paths:
+      - "app/agent/**"
+      - "app/services/process_digest.py"
+      - "tests/evals/**"
+      - ".github/workflows/evals.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  # One run per branch — later commits cancel earlier ones.
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: read
+      pull-requests: write   # so we can comment eval results on the PR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run evals
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'openai/gpt-oss-20b' }}
+          LLM_MODEL_FALLBACKS: ${{ vars.LLM_MODEL_FALLBACKS || '' }}
+          EVAL_PASS_THRESHOLD: ${{ vars.EVAL_PASS_THRESHOLD || '55' }}
+          # Evals don't touch the DB, but connection.py loads dotenv and reads
+          # DATABASE_URL at import — supply a dummy so it doesn't crash.
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/x"
+          ENVIRONMENT: "LOCAL"
+        run: uv run python -m tests.evals.run_evals --check
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: tests/evals/latest.json
+
+      - name: Comment eval summary on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              const r = JSON.parse(fs.readFileSync('tests/evals/latest.json', 'utf8'));
+              const axis = Object.entries(r.per_axis)
+                .map(([k, v]) => `\`${k}\`: **${v}**/5`).join(' · ');
+              const rows = r.cases.map(c =>
+                `| \`${c.case_id}\` | ${c.total.toFixed(1)} | ${(c.required_facts_hit * 100).toFixed(0)}% | ${c.forbidden_terms_hit.length} | ${c.faithfulness}/${c.informativeness}/${c.concision}/${c.no_hype} |`
+              ).join('\n');
+              body = [
+                `### 📊 Summary quality evals`,
+                ``,
+                `**Composite:** ${r.avg_total.toFixed(1)}/100 · **model:** \`${r.model}\` · **cases:** ${r.n_cases}`,
+                ``,
+                `${axis}`,
+                ``,
+                `| case | total | facts | forbidden | F/I/C/N |`,
+                `|:-----|------:|------:|----------:|--------:|`,
+                rows,
+              ].join('\n');
+            } catch (e) {
+              body = `### 📊 Summary quality evals\n\n_Report unavailable: ${e.message}_`;
+            }
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
