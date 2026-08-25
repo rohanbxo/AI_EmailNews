@@ -69,10 +69,28 @@ class ProcessDigest(ProcessService):
             n += 1
 
         for vid in repo.youtube_needing_digest():
+            body = vid.transcript or vid.description or ""
+            if not body.strip():
+                # Nothing at all to summarize — skip so we don't produce
+                # a garbage LLM output from an empty prompt.
+                log.info(
+                    "Skipping video %s (%s): no transcript and no description",
+                    vid.video_id,
+                    vid.title[:60],
+                )
+                continue
+            has_transcript = vid.transcript_status == "ok" and vid.transcript
+            channel = vid.channel_title or vid.channel_id
+            if has_transcript:
+                source_label = f"YouTube — {channel}"
+            else:
+                # Cue the LLM that this is description-only so it doesn't
+                # invent details the transcript would have contained.
+                source_label = (
+                    f"YouTube — {channel} (video description only; transcript unavailable)"
+                )
             result = self.agent.summarize(
-                title=vid.title,
-                body=vid.transcript or vid.description or "",
-                source=f"YouTube — {vid.channel_title or vid.channel_id}",
+                title=vid.title, body=body, source=source_label
             )
             repo.create_digest(
                 source_type="youtube",

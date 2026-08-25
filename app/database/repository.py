@@ -114,11 +114,18 @@ class Repository:
         return list(self.session.scalars(stmt))
 
     def youtube_needing_digest(self, limit: int = 50) -> List[YouTubeVideo]:
+        """Videos ready to summarize.
+
+        Includes videos where the transcript is `unavailable` — we still
+        summarize those, but from the video description instead of the
+        transcript (see process_digest.py). This keeps the pipeline useful
+        on days when YouTube blocks the runner IP for transcript fetches.
+        """
         stmt = (
             select(YouTubeVideo)
             .outerjoin(Digest, Digest.youtube_video_id == YouTubeVideo.id)
             .where(Digest.id.is_(None))
-            .where(YouTubeVideo.transcript_status == "ok")
+            .where(YouTubeVideo.transcript_status.in_(("ok", "unavailable")))
             .limit(limit)
         )
         return list(self.session.scalars(stmt))
